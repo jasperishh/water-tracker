@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>water tracker 💧</title>
+<style>
+  :root{
+    --deep:#075985;
+    --ocean:#0284c7;
+    --cyan:#06b6d4;
+    --aqua:#22d3ee;
+    --bg:#eaf7fb;
+    --card:rgba(255,255,255,0.55);
+    --card-border:rgba(255,255,255,0.85);
+    --text:#0c3a4d;
+    --sub:#5b8aa3;
+    --radius:24px;
+    --shadow:0 10px 32px rgba(6,120,180,0.16);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:
+      radial-gradient(circle at 15% 0%, #d7f4fb 0%, transparent 55%),
+      radial-gradient(circle at 90% 15%, #d3ecff 0%, transparent 50%),
+      var(--bg);
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color:var(--text);
+    overflow-x:hidden;
+  }
+
+  /* ---------- bubbles ---------- */
+  #bubbles{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;}
+  .bubble{
+    position:absolute; bottom:-60px; border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(56,189,248,0.15));
+    border:1px solid rgba(255,255,255,0.6);
+    animation:rise linear infinite;
+  }
+  @keyframes rise{
+    0%{transform:translateY(0) translateX(0); opacity:0;}
+    8%{opacity:0.7;} 92%{opacity:0.5;}
+    100%{transform:translateY(-115vh) translateX(var(--drift,20px)); opacity:0;}
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:relative; z-index:1; padding:30px 20px 44px;
+    background:linear-gradient(160deg, var(--deep), var(--ocean) 55%, var(--cyan));
+    color:#fff; overflow:hidden;
+  }
+  header h1{margin:0; font-size:23px; font-weight:800; letter-spacing:-0.5px; display:flex; align-items:center; gap:8px;}
+  header p{margin:5px 0 0; font-size:13px; opacity:0.9; font-weight:500;}
+  .sync-dot{display:inline-block; width:7px; height:7px; border-radius:50%; background:#5eead4; margin-right:6px; vertical-align:middle;}
+  .sync-dot.offline{background:#fbbf24;}
+  .sync-dot.syncing{background:#facc15; animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .header-wave{position:absolute; left:0; right:0; bottom:-2px; width:100%; height:38px; line-height:0;}
+  .header-wave svg{width:100%; height:100%; display:block;}
+
+  main{position:relative; z-index:1; padding:14px 16px 100px; max-width:480px; margin:0 auto;}
+  .card{
+    background:var(--card); border:1px solid var(--card-border);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border-radius:var(--radius); box-shadow:var(--shadow); padding:18px; margin-bottom:16px;
+  }
+  .tab-page{display:none;}
+  .tab-page.active{display:block; animation:fadeIn 0.25s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  /* ---------- water glass fill visual ---------- */
+  .glass-wrap{display:flex; justify-content:center; padding:6px 0 6px;}
+  .glass-stage{position:relative; width:150px; height:190px;}
+  .glass-stage > .glass{position:absolute; top:0; left:0; width:100%; height:100%;}
+  .glass{
+    border-radius:16px 16px 46px 46px; border:4px solid rgba(255,255,255,0.8);
+    background:rgba(255,255,255,0.25); overflow:hidden;
+    box-shadow:inset 0 2px 10px rgba(6,120,180,0.15), 0 6px 18px rgba(6,120,180,0.18);
+  }
+  .glass::before{
+    content:''; position:absolute; top:8px; left:14px; width:14px; height:40%;
+    background:rgba(255,255,255,0.55); border-radius:20px; filter:blur(1px); z-index:3;
+  }
+  .water-fill{
+    position:absolute; bottom:0; left:0; top:auto; width:100%; height:10%;
+    background:linear-gradient(180deg, var(--aqua), var(--ocean) 60%, var(--deep));
+    transition:height 0.7s cubic-bezier(.4,1.4,.6,1);
+  }
+  .wave-svg{position:absolute; top:-16px; left:0; width:200%; height:34px;}
+  .wave-svg.back{animation:waveMove 5.5s linear infinite; opacity:0.55;}
+  .wave-svg.front{animation:waveMove 3.8s linear infinite reverse;}
+  @keyframes waveMove{from{transform:translateX(0);} to{transform:translateX(-50%);}}
+  .glass-stage > .glass-center{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:4; pointer-events:none;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    background:rgba(255,255,255,0.88); border:1px solid rgba(255,255,255,0.9); border-radius:18px;
+    padding:12px 16px; box-shadow:0 4px 16px rgba(6,120,180,0.28); min-width:112px;
+  }
+  .ring-amount{font-size:24px; font-weight:800; color:var(--deep);}
+  .ring-raw{font-size:10px; color:var(--sub); margin-top:1px; font-weight:600;}
+  .ring-goal{font-size:12px; color:var(--sub); margin-top:3px; font-weight:600;}
+  .ring-pct{font-size:12px; font-weight:800; color:var(--ocean); margin-top:2px;}
+
+  /* ---------- chips (used for drink type, activity, climate) ---------- */
+  .type-label{font-size:11px; font-weight:700; color:var(--sub); margin:14px 0 6px 2px; text-transform:lowercase;}
+  .type-scroll{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
+  .type-scroll::-webkit-scrollbar{display:none;}
+  .chip-row{display:flex; gap:8px; flex-wrap:wrap; padding:2px 2px 6px;}
+  .type-chip{
+    flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:8px 14px; border-radius:16px; background:rgba(255,255,255,0.65); border:1px solid rgba(6,182,212,0.25);
+    font-size:11px; font-weight:700; color:var(--deep); cursor:pointer; transition:transform 0.15s ease, background 0.15s ease;
+  }
+  .type-chip .emoji{font-size:18px;}
+  .type-chip.active{background:linear-gradient(120deg, var(--ocean), var(--cyan)); color:#fff; border-color:transparent;}
+  .type-chip:active{transform:scale(0.94);}
+
+  .quick-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:6px;}
+  .quick-btn{
+    background:linear-gradient(160deg, rgba(255,255,255,0.75), rgba(224,247,250,0.6));
+    border:1px solid rgba(6,182,212,0.25); border-radius:18px 18px 24px 24px; padding:12px 4px;
+    text-align:center; font-size:12px; font-weight:700; color:var(--deep);
+    cursor:pointer; transition:transform 0.15s ease, background 0.15s ease;
+  }
+  .quick-btn:active{transform:scale(0.93); background:rgba(6,182,212,0.2);}
+  .quick-btn .emoji{font-size:22px; display:block; margin-bottom:4px;}
+  .custom-row{display:flex; gap:8px; margin-top:12px;}
+  .custom-row input{
+    flex:1; border:1px solid rgba(6,182,212,0.3); border-radius:14px; padding:10px 14px;
+    font-size:14px; background:rgba(255,255,255,0.7); color:var(--text); font-family:inherit;
+  }
+  .custom-row button{
+    border:none; border-radius:14px; padding:10px 18px; font-weight:700; font-size:13px;
+    background:linear-gradient(120deg, var(--ocean), var(--cyan)); color:#fff; cursor:pointer;
+  }
+
+  .section-title{font-size:14px; font-weight:800; margin:0 0 10px; color:var(--deep); display:flex; align-items:center; gap:6px;}
+  .section-hint{font-size:12px; color:var(--sub); line-height:1.5; margin:0 0 10px;}
+  .entry{display:flex; align-items:center; justify-content:space-between; padding:10px 4px; border-bottom:1px solid rgba(6,182,212,0.14);}
+  .entry:last-child{border-bottom:none;}
+  .entry-left{display:flex; align-items:center; gap:10px;}
+  .entry-emoji{font-size:18px;}
+  .entry-amount{font-weight:700; font-size:14px; color:var(--deep);}
+  .entry-sub{font-size:11px; color:var(--sub); margin-top:1px;}
+  .entry-del{background:none; border:none; color:var(--sub); font-size:16px; cursor:pointer; padding:4px 8px;}
+  .empty-state{text-align:center; color:var(--sub); font-size:13px; padding:20px 0;}
+
+  .streak-row{display:flex; gap:12px;}
+  .streak-card{flex:1; text-align:center; background:rgba(255,255,255,0.55); border-radius:18px 18px 26px 26px; padding:14px 8px; border:1px solid rgba(6,182,212,0.2);}
+  .streak-num{font-size:22px; font-weight:800; color:var(--ocean);}
+  .streak-label{font-size:11px; color:var(--sub); margin-top:2px; font-weight:600;}
+
+  .cal-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .cal-header button{background:rgba(6,182,212,0.15); border:none; border-radius:10px; width:30px; height:30px; font-size:14px; cursor:pointer; color:var(--ocean); font-weight:700;}
+  .cal-month{font-weight:800; font-size:14px; color:var(--deep);}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px;}
+  .cal-dow{font-size:10px; text-align:center; color:var(--sub); font-weight:700; padding-bottom:4px;}
+  .cal-cell{aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:var(--deep); position:relative;}
+  .cal-cell.empty{visibility:hidden;}
+  .cal-cell.today{outline:2px solid var(--ocean); outline-offset:1px;}
+
+  .goal-input-row{display:flex; align-items:center; gap:10px; margin-top:8px;}
+  .goal-input-row input{
+    flex:1; border:1px solid rgba(6,182,212,0.3); border-radius:14px; padding:12px 14px;
+    font-size:15px; background:rgba(255,255,255,0.7); font-family:inherit; font-weight:700; color:var(--text);
+  }
+  .save-btn{
+    width:100%; border:none; border-radius:14px; padding:13px; font-weight:800; font-size:14px;
+    background:linear-gradient(120deg, var(--ocean), var(--cyan)); color:#fff; cursor:pointer; margin-top:14px;
+  }
+  .ghost-btn{
+    width:100%; border:1px solid rgba(6,182,212,0.35); border-radius:14px; padding:12px; font-weight:700; font-size:13px;
+    background:rgba(255,255,255,0.5); color:var(--ocean); cursor:pointer; margin-top:10px;
+  }
+  .preset-goals{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .preset-chip{background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.3); border-radius:12px; padding:7px 12px; font-size:12px; font-weight:700; color:var(--ocean); cursor:pointer;}
+
+  .calc-result{font-size:13px; font-weight:700; color:var(--deep); margin-top:10px; text-align:center; min-height:18px;}
+
+  .type-multi-row{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 2px; border-bottom:1px solid rgba(6,182,212,0.12);}
+  .type-multi-row:last-child{border-bottom:none;}
+  .type-multi-left{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--deep); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .type-multi-right{display:flex; align-items:center; gap:6px; flex:0 0 auto;}
+  .multi-input{
+    width:56px; border:1px solid rgba(6,182,212,0.3); border-radius:10px; padding:6px 4px;
+    font-size:12px; font-weight:700; text-align:center; background:rgba(255,255,255,0.8); color:var(--text);
+  }
+  .multi-pct{font-size:11px; color:var(--sub); font-weight:600;}
+  .type-del{background:none; border:none; color:#e11d48; font-size:14px; cursor:pointer; padding:2px 4px;}
+  .add-type-form{display:flex; gap:6px; margin-top:12px;}
+  .add-type-form input:nth-child(1){width:50px; text-align:center;}
+  .add-type-form input:nth-child(2){flex:1;}
+  .add-type-form input:nth-child(3){width:60px; text-align:center;}
+  .add-type-form input{
+    border:1px solid rgba(6,182,212,0.3); border-radius:12px; padding:9px 8px; font-size:12px;
+    background:rgba(255,255,255,0.7); font-family:inherit; color:var(--text);
+  }
+  .add-type-btn{border:none; border-radius:12px; padding:9px 12px; font-weight:700; font-size:12px; background:linear-gradient(120deg, var(--ocean), var(--cyan)); color:#fff; cursor:pointer;}
+
+  /* toggle switch */
+  .switch-row{display:flex; align-items:center; justify-content:space-between; padding:4px 2px;}
+  .switch-label{font-size:13px; font-weight:700; color:var(--deep);}
+  .switch{position:relative; width:44px; height:26px; flex:0 0 auto;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch-track{position:absolute; inset:0; background:rgba(6,182,212,0.25); border-radius:20px; transition:background 0.2s ease; cursor:pointer;}
+  .switch-track::before{content:''; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff; border-radius:50%; transition:transform 0.2s ease; box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+  .switch input:checked + .switch-track{background:linear-gradient(120deg, var(--ocean), var(--cyan));}
+  .switch input:checked + .switch-track::before{transform:translateX(18px);}
+  .reminder-detail{margin-top:12px; display:none;}
+  .reminder-detail.show{display:block;}
+  .reminder-status{font-size:11px; color:var(--sub); margin-top:8px; text-align:center;}
+
+  /* bottom nav */
+  nav{
+    position:fixed; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:4px;
+    background:rgba(255,255,255,0.85); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.9);
+    border-radius:22px; padding:6px; box-shadow:var(--shadow); z-index:5; width:calc(100% - 32px); max-width:400px;
+  }
+  nav button{
+    flex:1; border:none; background:none; padding:10px 4px; border-radius:16px;
+    display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; color:var(--sub); font-size:10px; font-weight:700;
+  }
+  nav button .nav-emoji{font-size:18px;}
+  nav button.active{background:linear-gradient(120deg, var(--ocean), var(--cyan)); color:#fff;}
+
+  .toast{
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--deep); color:#fff; padding:10px 18px; border-radius:14px; font-size:13px;
+    font-weight:600; opacity:0; transition:all 0.3s ease; z-index:20; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* confetti + celebration modal */
+  .confetti-piece{position:fixed; top:-20px; pointer-events:none; z-index:60; border-radius:2px;}
+  @keyframes confettiFall{
+    from{transform:translateY(0) rotate(0deg); opacity:1;}
+    to{transform:translateY(115vh) rotate(560deg); opacity:0;}
+  }
+  .celebrate-overlay{
+    position:fixed; inset:0; z-index:55; background:rgba(7,89,133,0.35); backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.25s ease;
+  }
+  .celebrate-overlay.show{opacity:1; pointer-events:auto;}
+  .celebrate-card{
+    background:rgba(255,255,255,0.95); border-radius:26px; padding:26px 24px; width:calc(100% - 64px); max-width:320px;
+    text-align:center; box-shadow:0 20px 50px rgba(6,120,180,0.35); transform:scale(0.9); transition:transform 0.25s ease;
+  }
+  .celebrate-overlay.show .celebrate-card{transform:scale(1);}
+  .celebrate-emoji{font-size:44px;}
+  .celebrate-title{font-size:17px; font-weight:800; color:var(--deep); margin-top:6px;}
+  .celebrate-sub{font-size:13px; color:var(--sub); margin-top:6px; line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div id="bubbles"></div>
+
+<header>
+  <h1>💧 water tracker</h1>
+  <p><span class="sync-dot" id="syncDot"></span><span id="syncText">synced</span></p>
+  <div class="header-wave">
+    <svg viewBox="0 0 500 40" preserveAspectRatio="none"><path d="M0,20 C125,45 375,-5 500,20 L500,40 L0,40 Z" fill="#eaf7fb"/></svg>
+  </div>
+</header>
+
+<main>
+
+  <!-- TODAY TAB -->
+  <section class="tab-page active" id="page-today">
+    <div class="card">
+      <div class="glass-wrap">
+        <div class="glass-stage">
+          <div class="glass">
+            <div class="water-fill" id="waterFill">
+              <svg class="wave-svg back" viewBox="0 0 800 60" preserveAspectRatio="none"><path d="M0,30 C150,60 350,0 500,30 C650,60 800,10 800,30 L800,60 L0,60 Z" fill="rgba(255,255,255,0.35)"/></svg>
+              <svg class="wave-svg front" viewBox="0 0 800 60" preserveAspectRatio="none"><path d="M0,30 C150,0 350,60 500,30 C650,0 800,50 800,30 L800,60 L0,60 Z" fill="rgba(255,255,255,0.55)"/></svg>
+            </div>
+          </div>
+          <div class="glass-center">
+            <div class="ring-amount" id="ringAmount">0<span style="font-size:12px;">ml</span></div>
+            <div class="ring-raw" id="ringRaw" style="display:none;"></div>
+            <div class="ring-goal" id="ringGoalText">goal: 2000ml</div>
+            <div class="ring-pct" id="ringPct">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="type-label">what are you drinking</div>
+      <div class="type-scroll" id="typeScroll"></div>
+
+      <div class="quick-grid" id="quickGrid"></div>
+      <div class="custom-row">
+        <input type="number" id="customAmount" placeholder="custom amount (ml)" inputmode="numeric">
+        <button onclick="addCustom()">add</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🫧 today's sips</div>
+      <div id="entryList"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY TAB -->
+  <section class="tab-page" id="page-history">
+    <div class="card">
+      <div class="streak-row">
+        <div class="streak-card"><div class="streak-num" id="streakNum">0</div><div class="streak-label">day streak 🌊</div></div>
+        <div class="streak-card"><div class="streak-num" id="bestNum">0</div><div class="streak-label">best streak 🏆</div></div>
+        <div class="streak-card"><div class="streak-num" id="avgNum">0</div><div class="streak-label">avg ml/day 📊</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cal-header">
+        <button onclick="shiftMonth(-1)">‹</button>
+        <div class="cal-month" id="calMonthLabel"></div>
+        <button onclick="shiftMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <p style="font-size:11px; color:var(--sub); margin:10px 2px 0; line-height:1.4;">
+        shading reflects hydration value (after drink-type multipliers), not raw ml poured.
+      </p>
+    </div>
+  </section>
+
+  <!-- GOALS TAB -->
+  <section class="tab-page" id="page-goals">
+
+    <div class="card">
+      <div class="section-title">🎯 daily goal</div>
+      <div class="goal-input-row">
+        <input type="number" id="goalInput" inputmode="numeric">
+        <span style="font-size:13px; color:var(--sub); font-weight:700;">ml</span>
+      </div>
+      <div class="preset-goals">
+        <div class="preset-chip" onclick="setGoalPreset(1500)">1500ml</div>
+        <div class="preset-chip" onclick="setGoalPreset(2000)">2000ml</div>
+        <div class="preset-chip" onclick="setGoalPreset(2500)">2500ml</div>
+        <div class="preset-chip" onclick="setGoalPreset(3000)">3000ml</div>
+      </div>
+      <button class="save-btn" onclick="saveGoal()">save goal</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🧮 personalized goal calculator</div>
+      <p class="section-hint">based on body weight, activity level, and climate — tap calculate, then save goal above to apply it.</p>
+      <div class="goal-input-row">
+        <input type="number" id="calcWeight" inputmode="numeric" placeholder="your weight">
+        <span style="font-size:13px; color:var(--sub); font-weight:700;">kg</span>
+      </div>
+      <div class="type-label">activity level</div>
+      <div class="chip-row" id="activityChips"></div>
+      <div class="type-label">climate</div>
+      <div class="chip-row" id="climateChips"></div>
+      <button class="ghost-btn" onclick="calculateGoal()">calculate my goal</button>
+      <div class="calc-result" id="calcResult"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">💦 beverages & hydration ratios</div>
+      <p class="section-hint">each drink type counts toward your goal at a percentage of its raw ml, since caffeine and alcohol are mildly dehydrating. edit any percentage, or add your own beverage.</p>
+      <div id="typeMultiList"></div>
+      <div class="add-type-form">
+        <input type="text" id="newTypeEmoji" placeholder="🥛" maxlength="4">
+        <input type="text" id="newTypeLabel" placeholder="beverage name">
+        <input type="number" id="newTypeMultiplier" placeholder="100" value="100">
+        <button class="add-type-btn" onclick="addCustomType()">add</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">⏰ smart reminders</div>
+      <div class="switch-row">
+        <span class="switch-label">remind me to drink</span>
+        <label class="switch">
+          <input type="checkbox" id="reminderToggle" onchange="toggleReminders()">
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="reminder-detail" id="reminderDetail">
+        <div class="type-label">remind me every</div>
+        <div class="chip-row" id="intervalChips"></div>
+        <p class="reminder-status" id="reminderStatus"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">⚙️ setup</div>
+      <p class="section-hint">paste your apps script web app url below, then hit save. this connects the tracker to your google sheet.</p>
+      <div class="goal-input-row">
+        <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/..." style="font-weight:500; font-size:12px;">
+      </div>
+      <button class="save-btn" onclick="saveApiUrl()">save url</button>
+    </div>
+  </section>
+
+</main>
+
+<nav>
+  <button class="active" data-page="today" onclick="switchTab('today')"><span class="nav-emoji">💧</span>today</button>
+  <button data-page="history" onclick="switchTab('history')"><span class="nav-emoji">🌊</span>history</button>
+  <button data-page="goals" onclick="switchTab('goals')"><span class="nav-emoji">🎯</span>goals</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<div class="celebrate-overlay" id="celebrateOverlay">
+  <div class="celebrate-card">
+    <div class="celebrate-emoji">🎉</div>
+    <div class="celebrate-title">hydration goal smashed!</div>
+    <div class="celebrate-sub" id="celebrateSub"></div>
+    <button class="save-btn" onclick="shareRecap()">share recap</button>
+    <button class="ghost-btn" onclick="closeCelebrate()">nice, close</button>
+  </div>
+</div>
+
+<script>
+// ============ CONFIG ============
+let WATER_API_URL = localStorage.getItem('water_api_url') || 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+
+const QUICK_ADDS = [
+  {emoji:'🥃', label:'150ml', amount:150},
+  {emoji:'🥤', label:'250ml', amount:250},
+  {emoji:'🧴', label:'500ml', amount:500},
+  {emoji:'🧊', label:'1000ml', amount:1000},
+];
+
+const DEFAULT_TYPES = [
+  {id:'water',   emoji:'💧', label:'water',   multiplier:1.0,  isDefault:true},
+  {id:'tea',     emoji:'🍵', label:'tea',     multiplier:0.9,  isDefault:true},
+  {id:'coffee',  emoji:'☕', label:'coffee',  multiplier:0.8,  isDefault:true},
+  {id:'juice',   emoji:'🧃', label:'juice',   multiplier:0.95, isDefault:true},
+  {id:'soda',    emoji:'🥤', label:'soda',    multiplier:0.85, isDefault:true},
+  {id:'alcohol', emoji:'🍷', label:'alcohol', multiplier:0.4,  isDefault:true},
+  {id:'other',   emoji:'🫗', label:'other',   multiplier:1.0,  isDefault:true},
+];
+
+const ACTIVITY_LEVELS = [
+  {id:'low', label:'low', mult:1.0},
+  {id:'moderate', label:'moderate', mult:1.15},
+  {id:'high', label:'high', mult:1.3},
+];
+const CLIMATE_LEVELS = [
+  {id:'cool', label:'cool', mult:1.0},
+  {id:'moderate', label:'moderate', mult:1.05},
+  {id:'hot', label:'hot', mult:1.15},
+];
+const REMINDER_INTERVALS = [30, 60, 90, 120];
+
+// ============ STATE ============
+let entries = [];
+let allTypes = [];
+let dailyGoal = 2000;
+let calCursor = new Date();
+let selectedType = 'water';
+let selectedActivity = localStorage.getItem('water_activity') || 'moderate';
+let selectedClimate = localStorage.getItem('water_climate') || 'moderate';
+let selectedInterval = parseInt(localStorage.getItem('water_reminder_interval')||'60',10);
+let reminderTimer = null;
+
+// ============ BUBBLES ============
+function initBubbles(){
+  const wrap = document.getElementById('bubbles');
+  for(let i=0;i<14;i++){
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    const size = 6 + Math.random()*22;
+    b.style.width = size+'px'; b.style.height = size+'px';
+    b.style.left = (Math.random()*100)+'vw';
+    b.style.setProperty('--drift', (Math.random()*60-30)+'px');
+    b.style.animationDuration = (10 + Math.random()*14)+'s';
+    b.style.animationDelay = '-'+(Math.random()*14)+'s';
+    wrap.appendChild(b);
+  }
+}
+
+// ============ HELPERS ============
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function nowTimeStr(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function uid(prefix){ return (prefix||'w')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function setSyncStatus(state){
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  dot.className = 'sync-dot';
+  if(state==='offline'){ dot.classList.add('offline'); text.textContent='offline'; }
+  else if(state==='syncing'){ dot.classList.add('syncing'); text.textContent='syncing...'; }
+  else { text.textContent='synced'; }
+}
+function typeInfo(id){ return allTypes.find(t=>t.id===id) || allTypes[0] || DEFAULT_TYPES[0]; }
+function effectiveMl(entry){ return Math.round(entry.amount * typeInfo(entry.type).multiplier); }
+function slugify(s){ return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || uid('type'); }
+
+// ============ LOCAL STORAGE ============
+function loadLocal(){
+  entries = JSON.parse(localStorage.getItem('water_entries')||'[]');
+  dailyGoal = parseInt(localStorage.getItem('water_goal')||'2000',10);
+  const storedTypes = JSON.parse(localStorage.getItem('water_types')||'null');
+  allTypes = storedTypes && storedTypes.length ? storedTypes : DEFAULT_TYPES.map(t=>({...t}));
+}
+function saveLocal(){
+  localStorage.setItem('water_entries', JSON.stringify(entries));
+  localStorage.setItem('water_goal', String(dailyGoal));
+  localStorage.setItem('water_types', JSON.stringify(allTypes));
+}
+function queuePending(action, payload){
+  const q = JSON.parse(localStorage.getItem('water_queue')||'[]');
+  q.push({action, payload, ts:Date.now()});
+  localStorage.setItem('water_queue', JSON.stringify(q));
+}
+
+// ============ API ============
+async function apiGet(){
+  if(!WATER_API_URL || WATER_API_URL==='PASTE_YOUR_APPS_SCRIPT_URL_HERE') return null;
+  try{
+    setSyncStatus('syncing');
+    const res = await fetch(WATER_API_URL);
+    const data = await res.json();
+    setSyncStatus('online');
+    return data;
+  }catch(err){ setSyncStatus('offline'); return null; }
+}
+async function apiPost(body){
+  if(!WATER_API_URL || WATER_API_URL==='PASTE_YOUR_APPS_SCRIPT_URL_HERE'){
+    queuePending(body.action, body);
+    return false;
+  }
+  try{
+    setSyncStatus('syncing');
+    await fetch(WATER_API_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
+    setSyncStatus('online');
+    return true;
+  }catch(err){ setSyncStatus('offline'); queuePending(body.action, body); return false; }
+}
+async function flushQueue(){
+  const q = JSON.parse(localStorage.getItem('water_queue')||'[]');
+  if(!q.length) return;
+  const remaining = [];
+  for(const item of q){ const ok = await apiPost(item.payload); if(!ok) remaining.push(item); }
+  localStorage.setItem('water_queue', JSON.stringify(remaining));
+}
+async function syncFromServer(){
+  const data = await apiGet();
+  if(!data) return;
+  entries = data.entries.map(e=>({
+    id:e.id, date:e.date, time:e.time, amount:Number(e.amount), type:e.type||'water',
+    timestamp:e.timestamp, note:e.note
+  }));
+  if(data.goal) dailyGoal = Number(data.goal);
+  if(data.types && data.types.length) allTypes = data.types;
+  saveLocal();
+  renderAll();
+}
+
+// ============ ACTIONS: entries ============
+async function addEntry(amount, type){
+  if(!amount || amount<=0) return;
+  const t = type || selectedType;
+  const entry = { id: uid(), date: todayStr(), time: nowTimeStr(), amount: amount, type: t, timestamp: new Date().toISOString(), note:'' };
+  entries.push(entry);
+  saveLocal();
+  localStorage.setItem('water_last_entry_ts', String(Date.now()));
+  renderAll();
+  showToast(`+${amount}ml ${typeInfo(t).label} added ${typeInfo(t).emoji}`);
+  await apiPost({action:'add', id:entry.id, date:entry.date, time:entry.time, amount:entry.amount, type:t, note:''});
+}
+function addCustom(){
+  const input = document.getElementById('customAmount');
+  const val = parseInt(input.value,10);
+  if(val>0){ addEntry(val); input.value=''; }
+}
+async function deleteEntry(id){
+  entries = entries.filter(e=>e.id!==id);
+  saveLocal();
+  renderAll();
+  await apiPost({action:'delete', id});
+}
+function selectType(id){ selectedType = id; renderTypeScroll(); }
+
+// ============ ACTIONS: goal ============
+async function saveGoal(){
+  const val = parseInt(document.getElementById('goalInput').value,10);
+  if(!val || val<=0){ showToast('enter a valid goal'); return; }
+  dailyGoal = val;
+  saveLocal();
+  renderAll();
+  showToast('goal saved 🎯');
+  await apiPost({action:'setGoal', goal:val});
+}
+function setGoalPreset(val){ document.getElementById('goalInput').value = val; }
+
+// ============ ACTIONS: goal calculator ============
+function selectActivity(id){ selectedActivity = id; localStorage.setItem('water_activity', id); renderCalcChips(); }
+function selectClimate(id){ selectedClimate = id; localStorage.setItem('water_climate', id); renderCalcChips(); }
+function calculateGoal(){
+  const weight = parseFloat(document.getElementById('calcWeight').value);
+  if(!weight || weight<=0){ showToast('enter your weight first'); return; }
+  localStorage.setItem('water_weight', String(weight));
+  const act = ACTIVITY_LEVELS.find(a=>a.id===selectedActivity).mult;
+  const cli = CLIMATE_LEVELS.find(c=>c.id===selectedClimate).mult;
+  const raw = weight * 35 * act * cli;
+  const goal = Math.round(raw/50)*50;
+  document.getElementById('goalInput').value = goal;
+  document.getElementById('calcResult').textContent = `recommended: ${goal}ml — tap "save goal" above to apply`;
+}
+
+// ============ ACTIONS: beverage types ============
+function updateTypeMultiplier(id, pctValue){
+  const t = allTypes.find(x=>x.id===id);
+  if(!t) return;
+  const mult = Math.max(0, parseFloat(pctValue)||0) / 100;
+  t.multiplier = mult;
+  saveLocal();
+  renderAll();
+  renderGoalsPage();
+  apiPost({action:'updateType', id, multiplier:mult});
+}
+function addCustomType(){
+  const emoji = document.getElementById('newTypeEmoji').value.trim() || '🥤';
+  const label = document.getElementById('newTypeLabel').value.trim();
+  const pct = parseFloat(document.getElementById('newTypeMultiplier').value);
+  if(!label){ showToast('name your beverage first'); return; }
+  if(!pct && pct!==0){ showToast('enter a hydration %'); return; }
+  let id = slugify(label);
+  if(allTypes.some(t=>t.id===id)) id = id+'-'+Math.random().toString(36).slice(2,5);
+  const newType = { id, emoji, label, multiplier: pct/100, isDefault:false };
+  allTypes.push(newType);
+  saveLocal();
+  renderGoalsPage();
+  renderTypeScroll();
+  document.getElementById('newTypeEmoji').value = '';
+  document.getElementById('newTypeLabel').value = '';
+  document.getElementById('newTypeMultiplier').value = '100';
+  showToast(`${emoji} ${label} added`);
+  apiPost({action:'addType', id, emoji, label, multiplier:newType.multiplier});
+}
+function deleteCustomType(id){
+  const t = allTypes.find(x=>x.id===id);
+  if(!t || t.isDefault) return;
+  if(!confirm(`remove ${t.label} from your beverage list?`)) return;
+  allTypes = allTypes.filter(x=>x.id!==id);
+  if(selectedType===id) selectedType = 'water';
+  saveLocal();
+  renderAll();
+  renderGoalsPage();
+  apiPost({action:'deleteType', id});
+}
+
+// ============ ACTIONS: api url ============
+function saveApiUrl(){
+  const val = document.getElementById('apiUrlInput').value.trim();
+  if(!val){ showToast('paste a url first'); return; }
+  WATER_API_URL = val;
+  localStorage.setItem('water_api_url', val);
+  showToast('url saved, syncing...');
+  flushQueue().then(syncFromServer);
+}
+
+// ============ ACTIONS: reminders ============
+function toggleReminders(){
+  const enabled = document.getElementById('reminderToggle').checked;
+  localStorage.setItem('water_reminders_enabled', enabled ? '1':'0');
+  document.getElementById('reminderDetail').classList.toggle('show', enabled);
+  if(enabled) requestReminderPermission();
+  setupReminderTimer();
+}
+function selectInterval(minutes){
+  selectedInterval = minutes;
+  localStorage.setItem('water_reminder_interval', String(minutes));
+  renderIntervalChips();
+  setupReminderTimer();
+}
+function requestReminderPermission(){
+  if(!('Notification' in window)){
+    document.getElementById('reminderStatus').textContent = 'this browser does not support notifications';
+    return;
+  }
+  if(Notification.permission === 'default'){
+    Notification.requestPermission().then(renderReminderStatus);
+  } else {
+    renderReminderStatus();
+  }
+}
+function renderReminderStatus(){
+  const el = document.getElementById('reminderStatus');
+  if(!('Notification' in window)){ el.textContent = "this browser doesn't support notifications"; return; }
+  if(Notification.permission==='granted') el.textContent = 'notifications enabled — works while this tab is open';
+  else if(Notification.permission==='denied') el.textContent = 'notifications blocked in browser settings';
+  else el.textContent = 'tap the toggle to allow notifications';
+}
+function setupReminderTimer(){
+  if(reminderTimer) clearInterval(reminderTimer);
+  const enabled = localStorage.getItem('water_reminders_enabled')==='1';
+  if(!enabled) return;
+  reminderTimer = setInterval(checkReminder, 60000);
+}
+function checkReminder(){
+  if(localStorage.getItem('water_reminders_enabled')!=='1') return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const last = parseInt(localStorage.getItem('water_last_entry_ts')||'0',10) || (Date.now() - 999999999);
+  const intervalMs = selectedInterval * 60000;
+  if(Date.now() - last >= intervalMs){
+    new Notification('💧 time to hydrate!', { body: `it's been a while — log a sip to keep your ${dailyGoal}ml goal on track.` });
+    localStorage.setItem('water_last_entry_ts', String(Date.now()));
+  }
+}
+
+// ============ CELEBRATION ============
+function fireConfetti(){
+  const colors = ['#22d3ee','#0284c7','#5eead4','#fbbf24','#f472b6','#a78bfa'];
+  for(let i=0;i<28;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    const size = 6 + Math.random()*6;
+    p.style.width = size+'px';
+    p.style.height = (size*1.6)+'px';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.left = (Math.random()*100)+'vw';
+    p.style.transform = `rotate(${Math.random()*360}deg)`;
+    const duration = 2.2 + Math.random()*1.4;
+    const delay = Math.random()*0.4;
+    p.style.animation = `confettiFall ${duration}s ease-in ${delay}s forwards`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), (duration+delay)*1000 + 200);
+  }
+}
+function maybeCelebrate(effective){
+  if(dailyGoal<=0 || effective < dailyGoal) return;
+  const flagKey = 'water_celebrated_'+todayStr();
+  if(localStorage.getItem(flagKey)) return;
+  localStorage.setItem(flagKey, '1');
+  fireConfetti();
+  const {current} = computeStreaks();
+  document.getElementById('celebrateSub').textContent =
+    `${effective}ml hydration today • ${current} day streak 🌊`;
+  document.getElementById('celebrateOverlay').classList.add('show');
+}
+function closeCelebrate(){ document.getElementById('celebrateOverlay').classList.remove('show'); }
+function shareRecap(){
+  const {current} = computeStreaks();
+  const total = todayEntries().reduce((s,e)=>s+effectiveMl(e),0);
+  const text = `💧 hydration recap — ${todayStr()}
+${total}ml logged toward my ${dailyGoal}ml goal
+current streak: ${current} day${current===1?'':'s'} 🌊`;
+  if(navigator.share){
+    navigator.share({text}).catch(()=>{});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(text);
+    showToast('recap copied to clipboard 📋');
+  } else {
+    showToast(text);
+  }
+}
+
+// ============ RENDER: TODAY ============
+function renderTypeScroll(){
+  const wrap = document.getElementById('typeScroll');
+  wrap.innerHTML = '';
+  allTypes.forEach(t=>{
+    const chip = document.createElement('div');
+    chip.className = 'type-chip' + (t.id===selectedType ? ' active':'');
+    chip.innerHTML = `<span class="emoji">${t.emoji}</span>${t.label}`;
+    chip.onclick = ()=>selectType(t.id);
+    wrap.appendChild(chip);
+  });
+}
+function renderQuickGrid(){
+  const grid = document.getElementById('quickGrid');
+  grid.innerHTML = '';
+  QUICK_ADDS.forEach(q=>{
+    const btn = document.createElement('div');
+    btn.className = 'quick-btn';
+    btn.innerHTML = `<span class="emoji">${q.emoji}</span>${q.label}`;
+    btn.onclick = ()=>addEntry(q.amount);
+    grid.appendChild(btn);
+  });
+}
+function todayEntries(){
+  const t = todayStr();
+  return entries.filter(e=>e.date===t).sort((a,b)=> a.time < b.time ? 1 : -1);
+}
+function renderRing(){
+  const todays = todayEntries();
+  const raw = todays.reduce((s,e)=>s+e.amount,0);
+  const effective = todays.reduce((s,e)=>s+effectiveMl(e),0);
+  const pct = Math.min(1, dailyGoal>0 ? effective/dailyGoal : 0);
+  document.getElementById('waterFill').style.height = (pct*100)+'%';
+  document.getElementById('ringAmount').innerHTML = `${effective}<span style="font-size:12px;">ml</span>`;
+  const rawEl = document.getElementById('ringRaw');
+  if(raw !== effective){ rawEl.style.display = 'block'; rawEl.textContent = `from ${raw}ml drank`; }
+  else rawEl.style.display = 'none';
+  document.getElementById('ringGoalText').textContent = `goal: ${dailyGoal}ml`;
+  document.getElementById('ringPct').textContent = `${Math.round(pct*100)}%${pct>=1?' 🎉':''}`;
+  maybeCelebrate(effective);
+}
+function renderEntryList(){
+  const list = document.getElementById('entryList');
+  const todays = todayEntries();
+  if(!todays.length){
+    list.innerHTML = '<div class="empty-state">no sips logged yet today, get hydrated 💦</div>';
+    return;
+  }
+  list.innerHTML = '';
+  todays.forEach(e=>{
+    const info = typeInfo(e.type);
+    const eff = effectiveMl(e);
+    const row = document.createElement('div');
+    row.className = 'entry';
+    row.innerHTML = `
+      <div class="entry-left">
+        <span class="entry-emoji">${info.emoji}</span>
+        <div>
+          <div class="entry-amount">${e.amount}ml ${info.label}</div>
+          <div class="entry-sub">${e.time}${eff!==e.amount ? ` • ${eff}ml hydration`:''}</div>
+        </div>
+      </div>
+      <button class="entry-del" onclick="deleteEntry('${e.id}')">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// ============ RENDER: HISTORY ============
+function dailyTotals(){
+  const map = {};
+  entries.forEach(e=>{ map[e.date] = (map[e.date]||0) + effectiveMl(e); });
+  return map;
+}
+function computeStreaks(){
+  const totals = dailyTotals();
+  const dates = Object.keys(totals).filter(d=>totals[d]>=dailyGoal).sort();
+  if(!dates.length) return {current:0, best:0};
+  const dateSet = new Set(dates);
+  let best = 0, run = 0, prev = null;
+  dates.forEach(d=>{
+    if(prev){ const diff = (new Date(d) - new Date(prev)) / 86400000; run = diff===1 ? run+1 : 1; } else run = 1;
+    best = Math.max(best, run);
+    prev = d;
+  });
+  let current = 0, cursor = new Date();
+  while(true){
+    const ds = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0')+'-'+String(cursor.getDate()).padStart(2,'0');
+    if(dateSet.has(ds)){ current++; cursor.setDate(cursor.getDate()-1); } else break;
+  }
+  return {current, best};
+}
+function renderStreaks(){
+  const {current, best} = computeStreaks();
+  document.getElementById('streakNum').textContent = current;
+  document.getElementById('bestNum').textContent = best;
+  const totals = dailyTotals();
+  const days = Object.keys(totals);
+  const avg = days.length ? Math.round(days.reduce((s,d)=>s+totals[d],0)/days.length) : 0;
+  document.getElementById('avgNum').textContent = avg;
+}
+function renderCalendar(){
+  const totals = dailyTotals();
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  document.getElementById('calMonthLabel').textContent = calCursor.toLocaleDateString('en-US',{month:'long', year:'numeric'});
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  ['S','M','T','W','T','F','S'].forEach(d=>{
+    const el = document.createElement('div'); el.className = 'cal-dow'; el.textContent = d; grid.appendChild(el);
+  });
+  const firstDay = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  for(let i=0;i<firstDay;i++){ const el = document.createElement('div'); el.className='cal-cell empty'; grid.appendChild(el); }
+  const todayS = todayStr();
+  for(let day=1; day<=daysInMonth; day++){
+    const ds = y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    const total = totals[ds]||0;
+    const pct = dailyGoal>0 ? Math.min(1,total/dailyGoal) : 0;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (ds===todayS ? ' today':'');
+    let bg = 'rgba(6,182,212,0.06)';
+    if(total>0){
+      const alpha = 0.15 + pct*0.65;
+      bg = `rgba(34,211,238,${alpha.toFixed(2)})`;
+      if(pct>=1) bg = `rgba(2,132,199,${(0.35+pct*0.4).toFixed(2)})`;
+    }
+    cell.style.background = bg;
+    cell.textContent = day;
+    if(total>0) cell.title = `${total}ml hydration`;
+    grid.appendChild(cell);
+  }
+}
+function shiftMonth(delta){ calCursor.setMonth(calCursor.getMonth()+delta); renderCalendar(); }
+
+// ============ RENDER: GOALS ============
+function renderCalcChips(){
+  const actWrap = document.getElementById('activityChips');
+  actWrap.innerHTML = '';
+  ACTIVITY_LEVELS.forEach(a=>{
+    const chip = document.createElement('div');
+    chip.className = 'type-chip' + (a.id===selectedActivity ? ' active':'');
+    chip.textContent = a.label;
+    chip.onclick = ()=>selectActivity(a.id);
+    actWrap.appendChild(chip);
+  });
+  const cliWrap = document.getElementById('climateChips');
+  cliWrap.innerHTML = '';
+  CLIMATE_LEVELS.forEach(c=>{
+    const chip = document.createElement('div');
+    chip.className = 'type-chip' + (c.id===selectedClimate ? ' active':'');
+    chip.textContent = c.label;
+    chip.onclick = ()=>selectClimate(c.id);
+    cliWrap.appendChild(chip);
+  });
+  const storedWeight = localStorage.getItem('water_weight');
+  if(storedWeight) document.getElementById('calcWeight').value = storedWeight;
+}
+function renderIntervalChips(){
+  const wrap = document.getElementById('intervalChips');
+  wrap.innerHTML = '';
+  REMINDER_INTERVALS.forEach(mins=>{
+    const chip = document.createElement('div');
+    chip.className = 'type-chip' + (mins===selectedInterval ? ' active':'');
+    chip.textContent = mins+'m';
+    chip.onclick = ()=>selectInterval(mins);
+    wrap.appendChild(chip);
+  });
+}
+function renderGoalsPage(){
+  document.getElementById('goalInput').value = dailyGoal;
+  document.getElementById('apiUrlInput').value = (WATER_API_URL==='PASTE_YOUR_APPS_SCRIPT_URL_HERE') ? '' : WATER_API_URL;
+
+  const list = document.getElementById('typeMultiList');
+  list.innerHTML = '';
+  allTypes.forEach(t=>{
+    const row = document.createElement('div');
+    row.className = 'type-multi-row';
+    row.innerHTML = `
+      <div class="type-multi-left"><span>${t.emoji}</span>${t.label}</div>
+      <div class="type-multi-right">
+        <input class="multi-input" type="number" value="${Math.round(t.multiplier*100)}" onchange="updateTypeMultiplier('${t.id}', this.value)">
+        <span class="multi-pct">%</span>
+        ${t.isDefault ? '' : `<button class="type-del" onclick="deleteCustomType('${t.id}')">✕</button>`}
+      </div>
+    `;
+    list.appendChild(row);
+  });
+
+  renderCalcChips();
+
+  const remindersEnabled = localStorage.getItem('water_reminders_enabled')==='1';
+  document.getElementById('reminderToggle').checked = remindersEnabled;
+  document.getElementById('reminderDetail').classList.toggle('show', remindersEnabled);
+  renderIntervalChips();
+  renderReminderStatus();
+}
+
+// ============ TAB SWITCH ============
+function switchTab(name){
+  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`nav button[data-page="${name}"]`).classList.add('active');
+  if(name==='history') renderCalendar();
+  if(name==='goals') renderGoalsPage();
+}
+
+// ============ RENDER ALL ============
+function renderAll(){
+  renderRing();
+  renderEntryList();
+  renderStreaks();
+  renderTypeScroll();
+  if(document.getElementById('page-history').classList.contains('active')) renderCalendar();
+  if(document.getElementById('page-goals').classList.contains('active')) renderGoalsPage();
+}
+
+// ============ INIT ============
+window.addEventListener('online', ()=>{ flushQueue().then(syncFromServer); });
+window.addEventListener('offline', ()=> setSyncStatus('offline'));
+
+(async function init(){
+  initBubbles();
+  loadLocal();
+  renderTypeScroll();
+  renderQuickGrid();
+  renderAll();
+  setupReminderTimer();
+  if(navigator.onLine){ await flushQueue(); await syncFromServer(); }
+  else setSyncStatus('offline');
+})();
+</script>
+</body>
+</html>
