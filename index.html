@@ -250,6 +250,103 @@
   .celebrate-emoji{font-size:44px;}
   .celebrate-title{font-size:17px; font-weight:800; color:var(--deep); margin-top:6px;}
   .celebrate-sub{font-size:13px; color:var(--sub); margin-top:6px; line-height:1.5;}
+
+  /* ---------- NEW: header shimmer + floating droplets ---------- */
+  header::before{
+    content:''; position:absolute; top:-60%; left:-70%; width:55%; height:220%;
+    background:linear-gradient(105deg, transparent, rgba(255,255,255,0.16), transparent);
+    transform:rotate(10deg); animation:sheen 7s ease-in-out infinite; pointer-events:none;
+  }
+  @keyframes sheen{0%,55%{left:-70%;} 90%,100%{left:130%;}}
+  .header-drop{
+    position:absolute; font-size:22px; opacity:0.3; pointer-events:none;
+    animation:floatDrop 6s ease-in-out infinite;
+  }
+  .header-drop:nth-child(2){animation-duration:7.5s; animation-delay:-2s; font-size:15px;}
+  .header-drop:nth-child(3){animation-duration:5.2s; animation-delay:-4s; font-size:28px; opacity:0.18;}
+  @keyframes floatDrop{
+    0%,100%{transform:translateY(0) rotate(-10deg);}
+    50%{transform:translateY(-14px) rotate(10deg);}
+  }
+
+  /* ---------- NEW: glass pop + droplet splash on add ---------- */
+  @keyframes glassPop{
+    0%{transform:scale(1,1);} 35%{transform:scale(1.05,0.95);}
+    70%{transform:scale(0.97,1.04);} 100%{transform:scale(1,1);}
+  }
+  .glass-stage.pop .glass{animation:glassPop 0.5s ease; transform-origin:bottom center;}
+  .drop-fall{
+    position:absolute; left:50%; top:-28px; font-size:22px; z-index:5; pointer-events:none;
+    animation:dropFall 0.55s cubic-bezier(.5,0,.85,.5) forwards;
+  }
+  @keyframes dropFall{
+    from{transform:translate(-50%,0) scale(0.7); opacity:0;}
+    25%{opacity:1;}
+    to{transform:translate(-50%,155px) scale(1.05); opacity:0;}
+  }
+  .splash-ring{
+    position:absolute; left:50%; width:64px; height:22px; z-index:4; pointer-events:none;
+    border:2px solid rgba(255,255,255,0.85); border-radius:50%;
+    transform:translateX(-50%) scale(0.3); opacity:0;
+    animation:splash 0.55s ease-out 0.42s forwards;
+  }
+  @keyframes splash{
+    0%{transform:translateX(-50%) scale(0.3); opacity:0.9;}
+    100%{transform:translateX(-50%) scale(1.5); opacity:0;}
+  }
+
+  /* ---------- NEW: bubbles rising inside the water ---------- */
+  .water-bubble{
+    position:absolute; bottom:-12px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), rgba(255,255,255,0.25));
+    animation:bubbleUp linear infinite; pointer-events:none;
+  }
+  @keyframes bubbleUp{
+    from{transform:translateY(0) scale(0.7); opacity:0;}
+    15%{opacity:0.85;}
+    to{transform:translateY(-180px) scale(1.1); opacity:0;}
+  }
+  /* BUGFIX: hide waves/bubbles when the glass is empty so they don't float above nothing */
+  .water-fill.empty .wave-svg, .water-fill.empty .water-bubble{display:none;}
+
+  /* ---------- NEW: weekly hydration bar chart ---------- */
+  .week-chart{display:flex; align-items:flex-end; gap:8px; padding:4px 2px 0;}
+  .week-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;}
+  .week-bar-wrap{
+    position:relative; width:100%; max-width:32px; height:96px;
+    background:rgba(6,182,212,0.10); border-radius:9px; overflow:hidden;
+    display:flex; align-items:flex-end;
+  }
+  .week-goal-line{position:absolute; left:0; right:0; border-top:2px dashed rgba(7,89,133,0.35); z-index:2;}
+  .week-bar{
+    width:100%; height:0%; border-radius:9px 9px 0 0;
+    background:linear-gradient(180deg, var(--aqua), var(--ocean));
+    transition:height 0.9s cubic-bezier(.3,1.2,.4,1);
+  }
+  .week-bar.goal-hit{background:linear-gradient(180deg, #5eead4, var(--ocean));}
+  .week-day{font-size:9px; font-weight:800; color:var(--sub); text-transform:lowercase;}
+  .week-day.today{color:var(--ocean);}
+  .week-val{font-size:8px; color:var(--sub); font-weight:600; min-height:10px;}
+
+  /* ---------- NEW: nav bounce, streak pop-in, calendar stagger ---------- */
+  nav button.active .nav-emoji{display:inline-block; animation:navBounce 0.45s ease;}
+  @keyframes navBounce{0%{transform:scale(1);}40%{transform:scale(1.3) translateY(-3px);}100%{transform:scale(1);}}
+  .tab-page.active .streak-card{animation:popIn 0.45s ease backwards;}
+  .tab-page.active .streak-card:nth-child(2){animation-delay:0.08s;}
+  .tab-page.active .streak-card:nth-child(3){animation-delay:0.16s;}
+  @keyframes popIn{from{opacity:0; transform:translateY(12px) scale(0.94);} to{opacity:1; transform:translateY(0) scale(1);}}
+  .cal-cell{animation:cellIn 0.35s ease backwards;}
+  @keyframes cellIn{from{opacity:0; transform:scale(0.7);} to{opacity:1; transform:scale(1);}}
+  .quick-btn{position:relative; overflow:hidden;}
+  .quick-btn::after{
+    content:''; position:absolute; top:0; left:-80%; width:50%; height:100%;
+    background:linear-gradient(105deg, transparent, rgba(255,255,255,0.55), transparent);
+    animation:btnShine 4.5s ease-in-out infinite;
+  }
+  .quick-btn:nth-child(2)::after{animation-delay:1.1s;}
+  .quick-btn:nth-child(3)::after{animation-delay:2.2s;}
+  .quick-btn:nth-child(4)::after{animation-delay:3.3s;}
+  @keyframes btnShine{0%,70%{left:-80%;} 95%,100%{left:130%;}}
 </style>
 </head>
 <body>
@@ -259,6 +356,9 @@
 <header>
   <h1>💧 water tracker</h1>
   <p><span class="sync-dot" id="syncDot"></span><span id="syncText">synced</span></p>
+  <span class="header-drop" style="top:14px; right:24px;">💧</span>
+  <span class="header-drop" style="top:44px; right:66px;">💧</span>
+  <span class="header-drop" style="top:8px; right:110px;">💧</span>
   <div class="header-wave">
     <svg viewBox="0 0 500 40" preserveAspectRatio="none"><path d="M0,20 C125,45 375,-5 500,20 L500,40 L0,40 Z" fill="#eaf7fb"/></svg>
   </div>
@@ -310,6 +410,11 @@
         <div class="streak-card"><div class="streak-num" id="bestNum">0</div><div class="streak-label">best streak 🏆</div></div>
         <div class="streak-card"><div class="streak-num" id="avgNum">0</div><div class="streak-label">avg ml/day 📊</div></div>
       </div>
+    </div>
+    <div class="card">
+      <div class="section-title">📈 last 7 days</div>
+      <div class="week-chart" id="weekChart"></div>
+      <p style="font-size:11px; color:var(--sub); margin:10px 2px 0; line-height:1.4;">dashed line = your daily goal.</p>
     </div>
     <div class="card">
       <div class="cal-header">
@@ -474,6 +579,53 @@ function initBubbles(){
     wrap.appendChild(b);
   }
 }
+// NEW: small bubbles rising inside the water fill
+function initGlassBubbles(){
+  const fill = document.getElementById('waterFill');
+  for(let i=0;i<6;i++){
+    const b = document.createElement('div');
+    b.className = 'water-bubble';
+    const size = 3 + Math.random()*6;
+    b.style.width = size+'px'; b.style.height = size+'px';
+    b.style.left = (10 + Math.random()*80)+'%';
+    b.style.animationDuration = (3 + Math.random()*3.5)+'s';
+    b.style.animationDelay = '-'+(Math.random()*4)+'s';
+    fill.appendChild(b);
+  }
+}
+// NEW: droplet falls into the glass + splash ring + glass squash-pop on every add
+function playAddAnimation(){
+  const stage = document.querySelector('.glass-stage');
+  if(!stage) return;
+  stage.classList.remove('pop');
+  void stage.offsetWidth; // restart animation
+  stage.classList.add('pop');
+  const drop = document.createElement('div');
+  drop.className = 'drop-fall';
+  drop.textContent = '💧';
+  stage.appendChild(drop);
+  const ring = document.createElement('div');
+  ring.className = 'splash-ring';
+  const fillPct = parseFloat(document.getElementById('waterFill').style.height) || 0;
+  ring.style.bottom = `calc(${Math.min(fillPct,92)}% - 8px)`;
+  stage.appendChild(ring);
+  setTimeout(()=>{ drop.remove(); ring.remove(); }, 1100);
+}
+// NEW: animate the big number counting up/down instead of jumping
+let displayedAmount = 0;
+function animateAmount(target){
+  const el = document.getElementById('ringAmount');
+  const start = displayedAmount, diff = target - start;
+  if(diff===0){ el.innerHTML = `${target}<span style="font-size:12px;">ml</span>`; return; }
+  const t0 = performance.now(), dur = 550;
+  function step(now){
+    const p = Math.min(1,(now-t0)/dur), ease = 1-Math.pow(1-p,3);
+    const val = Math.round(start + diff*ease);
+    el.innerHTML = `${val}<span style="font-size:12px;">ml</span>`;
+    if(p<1) requestAnimationFrame(step); else displayedAmount = target;
+  }
+  requestAnimationFrame(step);
+}
 
 // ============ HELPERS ============
 function todayStr(){
@@ -502,6 +654,8 @@ function setSyncStatus(state){
 function typeInfo(id){ return allTypes.find(t=>t.id===id) || allTypes[0] || DEFAULT_TYPES[0]; }
 function effectiveMl(entry){ return Math.round(entry.amount * typeInfo(entry.type).multiplier); }
 function slugify(s){ return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || uid('type'); }
+// BUGFIX: escape user-provided text (custom beverage names/emoji) before injecting into innerHTML
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 // ============ LOCAL STORAGE ============
 function loadLocal(){
@@ -554,6 +708,8 @@ async function flushQueue(){
 async function syncFromServer(){
   const data = await apiGet();
   if(!data) return;
+  // BUGFIX: guard against a malformed/partial server response crashing the app
+  if(!Array.isArray(data.entries)) { if(data.goal) { dailyGoal = Number(data.goal); saveLocal(); renderAll(); } return; }
   entries = data.entries.map(e=>({
     id:e.id, date:e.date, time:e.time, amount:Number(e.amount), type:e.type||'water',
     timestamp:e.timestamp, note:e.note
@@ -572,6 +728,7 @@ async function addEntry(amount, type){
   entries.push(entry);
   saveLocal();
   localStorage.setItem('water_last_entry_ts', String(Date.now()));
+  playAddAnimation();
   renderAll();
   showToast(`+${amount}ml ${typeInfo(t).label} added ${typeInfo(t).emoji}`);
   await apiPost({action:'add', id:entry.id, date:entry.date, time:entry.time, amount:entry.amount, type:t, note:''});
@@ -608,8 +765,9 @@ function calculateGoal(){
   const weight = parseFloat(document.getElementById('calcWeight').value);
   if(!weight || weight<=0){ showToast('enter your weight first'); return; }
   localStorage.setItem('water_weight', String(weight));
-  const act = ACTIVITY_LEVELS.find(a=>a.id===selectedActivity).mult;
-  const cli = CLIMATE_LEVELS.find(c=>c.id===selectedClimate).mult;
+  // BUGFIX: fall back gracefully if a stale id is stored in localStorage instead of crashing
+  const act = (ACTIVITY_LEVELS.find(a=>a.id===selectedActivity) || ACTIVITY_LEVELS[1]).mult;
+  const cli = (CLIMATE_LEVELS.find(c=>c.id===selectedClimate) || CLIMATE_LEVELS[1]).mult;
   const raw = weight * 35 * act * cli;
   const goal = Math.round(raw/50)*50;
   document.getElementById('goalInput').value = goal;
@@ -623,8 +781,7 @@ function updateTypeMultiplier(id, pctValue){
   const mult = Math.max(0, parseFloat(pctValue)||0) / 100;
   t.multiplier = mult;
   saveLocal();
-  renderAll();
-  renderGoalsPage();
+  renderAll(); // BUGFIX: renderAll already refreshes the goals page when active — the extra renderGoalsPage() rebuilt inputs twice
   apiPost({action:'updateType', id, multiplier:mult});
 }
 function addCustomType(){
@@ -654,7 +811,6 @@ function deleteCustomType(id){
   if(selectedType===id) selectedType = 'water';
   saveLocal();
   renderAll();
-  renderGoalsPage();
   apiPost({action:'deleteType', id});
 }
 
@@ -673,7 +829,12 @@ function toggleReminders(){
   const enabled = document.getElementById('reminderToggle').checked;
   localStorage.setItem('water_reminders_enabled', enabled ? '1':'0');
   document.getElementById('reminderDetail').classList.toggle('show', enabled);
-  if(enabled) requestReminderPermission();
+  if(enabled){
+    requestReminderPermission();
+    // BUGFIX: start the countdown from *now*, otherwise the stale/absent last-entry
+    // timestamp triggers a notification within the first minute of enabling
+    localStorage.setItem('water_last_entry_ts', String(Date.now()));
+  }
   setupReminderTimer();
 }
 function selectInterval(minutes){
@@ -709,7 +870,8 @@ function setupReminderTimer(){
 function checkReminder(){
   if(localStorage.getItem('water_reminders_enabled')!=='1') return;
   if(!('Notification' in window) || Notification.permission!=='granted') return;
-  const last = parseInt(localStorage.getItem('water_last_entry_ts')||'0',10) || (Date.now() - 999999999);
+  let last = parseInt(localStorage.getItem('water_last_entry_ts')||'0',10);
+  if(!last){ last = Date.now(); localStorage.setItem('water_last_entry_ts', String(last)); }
   const intervalMs = selectedInterval * 60000;
   if(Date.now() - last >= intervalMs){
     new Notification('💧 time to hydrate!', { body: `it's been a while — log a sip to keep your ${dailyGoal}ml goal on track.` });
@@ -771,7 +933,7 @@ function renderTypeScroll(){
   allTypes.forEach(t=>{
     const chip = document.createElement('div');
     chip.className = 'type-chip' + (t.id===selectedType ? ' active':'');
-    chip.innerHTML = `<span class="emoji">${t.emoji}</span>${t.label}`;
+    chip.innerHTML = `<span class="emoji">${escapeHtml(t.emoji)}</span>${escapeHtml(t.label)}`;
     chip.onclick = ()=>selectType(t.id);
     wrap.appendChild(chip);
   });
@@ -789,15 +951,21 @@ function renderQuickGrid(){
 }
 function todayEntries(){
   const t = todayStr();
-  return entries.filter(e=>e.date===t).sort((a,b)=> a.time < b.time ? 1 : -1);
+  // BUGFIX: sort by full timestamp (stable, handles same-minute entries), newest first
+  return entries.filter(e=>e.date===t).sort((a,b)=>{
+    const ta = a.timestamp || a.time, tb = b.timestamp || b.time;
+    return ta < tb ? 1 : ta > tb ? -1 : 0;
+  });
 }
 function renderRing(){
   const todays = todayEntries();
   const raw = todays.reduce((s,e)=>s+e.amount,0);
   const effective = todays.reduce((s,e)=>s+effectiveMl(e),0);
   const pct = Math.min(1, dailyGoal>0 ? effective/dailyGoal : 0);
-  document.getElementById('waterFill').style.height = (pct*100)+'%';
-  document.getElementById('ringAmount').innerHTML = `${effective}<span style="font-size:12px;">ml</span>`;
+  const fill = document.getElementById('waterFill');
+  fill.style.height = (pct*100)+'%';
+  fill.classList.toggle('empty', pct<=0); // BUGFIX: no waves floating above an empty glass
+  animateAmount(effective);
   const rawEl = document.getElementById('ringRaw');
   if(raw !== effective){ rawEl.style.display = 'block'; rawEl.textContent = `from ${raw}ml drank`; }
   else rawEl.style.display = 'none';
@@ -820,9 +988,9 @@ function renderEntryList(){
     row.className = 'entry';
     row.innerHTML = `
       <div class="entry-left">
-        <span class="entry-emoji">${info.emoji}</span>
+        <span class="entry-emoji">${escapeHtml(info.emoji)}</span>
         <div>
-          <div class="entry-amount">${e.amount}ml ${info.label}</div>
+          <div class="entry-amount">${e.amount}ml ${escapeHtml(info.label)}</div>
           <div class="entry-sub">${e.time}${eff!==e.amount ? ` • ${eff}ml hydration`:''}</div>
         </div>
       </div>
@@ -850,10 +1018,11 @@ function computeStreaks(){
     prev = d;
   });
   let current = 0, cursor = new Date();
-  while(true){
-    const ds = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0')+'-'+String(cursor.getDate()).padStart(2,'0');
-    if(dateSet.has(ds)){ current++; cursor.setDate(cursor.getDate()-1); } else break;
-  }
+  const fmt = c => c.getFullYear()+'-'+String(c.getMonth()+1).padStart(2,'0')+'-'+String(c.getDate()).padStart(2,'0');
+  // BUGFIX: if today's goal isn't met *yet*, a streak running through yesterday
+  // shouldn't reset to 0 — start counting from yesterday in that case.
+  if(!dateSet.has(fmt(cursor))) cursor.setDate(cursor.getDate()-1);
+  while(dateSet.has(fmt(cursor))){ current++; cursor.setDate(cursor.getDate()-1); }
   return {current, best};
 }
 function renderStreaks(){
@@ -864,6 +1033,49 @@ function renderStreaks(){
   const days = Object.keys(totals);
   const avg = days.length ? Math.round(days.reduce((s,d)=>s+totals[d],0)/days.length) : 0;
   document.getElementById('avgNum').textContent = avg;
+}
+// NEW: animated bar chart of the last 7 days
+function renderWeekChart(){
+  const wrap = document.getElementById('weekChart');
+  if(!wrap) return;
+  const totals = dailyTotals();
+  wrap.innerHTML = '';
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    days.push({ds, dow:d.toLocaleDateString('en-US',{weekday:'short'}).slice(0,2).toLowerCase(), total: totals[ds]||0, isToday: i===0});
+  }
+  const scaleMax = Math.max(dailyGoal, ...days.map(d=>d.total), 1);
+  const goalPct = Math.min(100, dailyGoal/scaleMax*100);
+  const bars = [];
+  days.forEach(d=>{
+    const col = document.createElement('div');
+    col.className = 'week-col';
+    const barWrap = document.createElement('div');
+    barWrap.className = 'week-bar-wrap';
+    const goalLine = document.createElement('div');
+    goalLine.className = 'week-goal-line';
+    goalLine.style.bottom = goalPct+'%';
+    const bar = document.createElement('div');
+    bar.className = 'week-bar' + (dailyGoal>0 && d.total>=dailyGoal ? ' goal-hit':'');
+    bar.dataset.h = Math.min(100, d.total/scaleMax*100);
+    barWrap.appendChild(goalLine);
+    barWrap.appendChild(bar);
+    const val = document.createElement('div');
+    val.className = 'week-val';
+    val.textContent = d.total>0 ? (d.total>=1000 ? (d.total/1000).toFixed(1)+'L' : d.total) : '';
+    const day = document.createElement('div');
+    day.className = 'week-day' + (d.isToday ? ' today':'');
+    day.textContent = d.isToday ? 'today' : d.dow;
+    col.appendChild(barWrap); col.appendChild(val); col.appendChild(day);
+    wrap.appendChild(col);
+    bars.push(bar);
+  });
+  // let bars start at 0 then grow, so the CSS transition animates them
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    bars.forEach(b=> b.style.height = b.dataset.h+'%');
+  }));
 }
 function renderCalendar(){
   const totals = dailyTotals();
@@ -891,12 +1103,18 @@ function renderCalendar(){
       if(pct>=1) bg = `rgba(2,132,199,${(0.35+pct*0.4).toFixed(2)})`;
     }
     cell.style.background = bg;
+    cell.style.animationDelay = (day*7)+'ms';
     cell.textContent = day;
     if(total>0) cell.title = `${total}ml hydration`;
     grid.appendChild(cell);
   }
 }
-function shiftMonth(delta){ calCursor.setMonth(calCursor.getMonth()+delta); renderCalendar(); }
+function shiftMonth(delta){
+  // BUGFIX: set day to 1 first so e.g. Jan 31 -> "next month" doesn't overflow into March
+  calCursor.setDate(1);
+  calCursor.setMonth(calCursor.getMonth()+delta);
+  renderCalendar();
+}
 
 // ============ RENDER: GOALS ============
 function renderCalcChips(){
@@ -942,7 +1160,7 @@ function renderGoalsPage(){
     const row = document.createElement('div');
     row.className = 'type-multi-row';
     row.innerHTML = `
-      <div class="type-multi-left"><span>${t.emoji}</span>${t.label}</div>
+      <div class="type-multi-left"><span>${escapeHtml(t.emoji)}</span>${escapeHtml(t.label)}</div>
       <div class="type-multi-right">
         <input class="multi-input" type="number" value="${Math.round(t.multiplier*100)}" onchange="updateTypeMultiplier('${t.id}', this.value)">
         <span class="multi-pct">%</span>
@@ -967,7 +1185,7 @@ function switchTab(name){
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.querySelector(`nav button[data-page="${name}"]`).classList.add('active');
-  if(name==='history') renderCalendar();
+  if(name==='history'){ renderCalendar(); renderWeekChart(); }
   if(name==='goals') renderGoalsPage();
 }
 
@@ -977,7 +1195,7 @@ function renderAll(){
   renderEntryList();
   renderStreaks();
   renderTypeScroll();
-  if(document.getElementById('page-history').classList.contains('active')) renderCalendar();
+  if(document.getElementById('page-history').classList.contains('active')){ renderCalendar(); renderWeekChart(); }
   if(document.getElementById('page-goals').classList.contains('active')) renderGoalsPage();
 }
 
@@ -987,6 +1205,9 @@ window.addEventListener('offline', ()=> setSyncStatus('offline'));
 
 (async function init(){
   initBubbles();
+  initGlassBubbles();
+  // BUGFIX: pressing Enter in the custom amount field now adds the entry
+  document.getElementById('customAmount').addEventListener('keydown', e=>{ if(e.key==='Enter') addCustom(); });
   loadLocal();
   renderTypeScroll();
   renderQuickGrid();
